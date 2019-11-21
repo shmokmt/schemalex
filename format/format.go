@@ -64,6 +64,8 @@ func format(ctx *fmtCtx, v interface{}) error {
 		return formatTableOption(ctx, v.(model.TableOption))
 	case model.Index:
 		return formatIndex(ctx, v.(model.Index))
+	// case model.IndexOption:
+	// 	return formatIndexOption(ctx, v.(model.IndexOption))
 	case model.Reference:
 		return formatReference(ctx, v.(model.Reference))
 	default:
@@ -386,6 +388,23 @@ func formatIndex(ctx *fmtCtx, index model.Index) error {
 		i++
 	}
 	buf.WriteByte(')')
+
+	switch {
+	case index.IsFullText():
+		for opt := range index.Options() {
+			if opt.Key() != "WITH PARSER" {
+				continue
+			}
+			buf.WriteByte(' ')
+			buf.WriteString("WITH PARSER")
+			buf.WriteByte(' ')
+			if opt.NeedQuotes() {
+				buf.WriteString(util.Backquote(opt.Value()))
+			} else {
+				buf.WriteString(opt.Value())
+			}
+		}
+	}
 
 	if ref := index.Reference(); ref != nil {
 		newctx := ctx.clone()
